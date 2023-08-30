@@ -299,7 +299,7 @@ dependencies = [
  "lazy_static",
  "num-traits",
  "oorandom",
- "plotters",
+ "plotters 0.3.4",
  "rayon",
  "regex",
  "serde",
@@ -326,7 +326,7 @@ dependencies = [
  "lazy_static",
  "num-traits",
  "oorandom",
- "plotters",
+ "plotters 0.3.4",
  "rayon",
  "regex",
  "serde",
@@ -650,9 +650,9 @@ dependencies = [
 
 [[package]]
 name = "gif"
-version = "0.11.4"
+version = "0.12.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3edd93c6756b4dfaf2709eafcc345ba2636565295c198a9cfbf75fa5e3e00b06"
+checksum = "80792593675e051cf94a4b111980da2ba60d4a83e43e0048c5693baab3977045"
 dependencies = [
  "color_quant",
  "weezl",
@@ -1041,15 +1041,27 @@ version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2538b639e642295546c50fcd545198c9d64ee2a38620a628724a3b266d5fbf97"
 dependencies = [
+ "num-traits",
+ "plotters-backend 0.3.4",
+ "plotters-svg 0.3.3",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
+name = "plotters"
+version = "0.3.5"
+source = "git+https://github.com/plotters-rs/plotters.git#50e462bba20d0d205e21215be3f5d3cf567015f3"
+dependencies = [
  "chrono",
  "font-kit",
  "image",
  "lazy_static",
  "num-traits",
  "pathfinder_geometry",
- "plotters-backend",
+ "plotters-backend 0.3.5",
  "plotters-bitmap",
- "plotters-svg",
+ "plotters-svg 0.3.5",
  "ttf-parser",
  "wasm-bindgen",
  "web-sys",
@@ -1062,14 +1074,18 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "193228616381fecdc1224c62e96946dfbc73ff4384fba576e052ff8c1bea8142"
 
 [[package]]
+name = "plotters-backend"
+version = "0.3.5"
+source = "git+https://github.com/plotters-rs/plotters.git#50e462bba20d0d205e21215be3f5d3cf567015f3"
+
+[[package]]
 name = "plotters-bitmap"
-version = "0.3.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c4a1f21490a6cf4a84c272ad20bd7844ed99a3178187a4c5ab7f2051295beef"
+version = "0.3.3"
+source = "git+https://github.com/plotters-rs/plotters.git#50e462bba20d0d205e21215be3f5d3cf567015f3"
 dependencies = [
  "gif",
  "image",
- "plotters-backend",
+ "plotters-backend 0.3.5",
 ]
 
 [[package]]
@@ -1078,7 +1094,15 @@ version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f9a81d2759aae1dae668f783c308bc5c8ebd191ff4184aaa1b37f65a6ae5a56f"
 dependencies = [
- "plotters-backend",
+ "plotters-backend 0.3.4",
+]
+
+[[package]]
+name = "plotters-svg"
+version = "0.3.5"
+source = "git+https://github.com/plotters-rs/plotters.git#50e462bba20d0d205e21215be3f5d3cf567015f3"
+dependencies = [
+ "plotters-backend 0.3.5",
 ]
 
 [[package]]
@@ -1263,7 +1287,7 @@ dependencies = [
  "dialoguer",
  "nalgebra",
  "plotpy",
- "plotters",
+ "plotters 0.3.5",
  "rand",
  "rand_distr",
  "rayon",
@@ -1595,9 +1619,9 @@ dependencies = [
 
 [[package]]
 name = "ttf-parser"
-version = "0.15.2"
+version = "0.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7b3e06c9b9d80ed6b745c7159c40b311ad2916abb34a49e9be2653b90db0d8dd"
+checksum = "375812fa44dab6df41c195cd2f7fecb488f6c09fbaafb62807488cefab642bff"
 
 [[package]]
 name = "typenum"

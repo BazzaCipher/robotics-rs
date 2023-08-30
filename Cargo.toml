@@ -13,7 +13,8 @@ exclude = ["dataset/*"]
 
 [dependencies]
 nalgebra = {version = "0.32", features=["rand-no-std"]}
-plotters = "0.3"
+plotters = { version = "0.3", git = "https://github.com/plotters-rs/plotters.git" }
+# nannou = "0.18"
 csv = "1.2"
 serde = { version = "1.0", features = ["derive"] }
 rustc-hash = "1.1"
