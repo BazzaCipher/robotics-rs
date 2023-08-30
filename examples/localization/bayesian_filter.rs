@@ -5,9 +5,10 @@ use rand_distr::{Distribution, Normal};
 use std::error::Error;
 
 extern crate robotics;
-use robotics::localization::{
-    BayesianFilter, ExtendedKalmanFilter, ParticleFilter, ResamplingScheme, UnscentedKalmanFilter,
-};
+// use robotics::localization::{
+//    BayesianFilter, ExtendedKalmanFilter, ParticleFilter, ResamplingScheme, UnscentedKalmanFilter,
+//};
+use robotics::localization::{BayesianFilter, ParticleFilter, ResamplingScheme};
 use robotics::models::measurement::{MeasurementModel, SimpleProblemMeasurementModel};
 use robotics::models::motion::{MotionModel, SimpleProblemMotionModel};
 use robotics::utils::deg2rad;
@@ -72,23 +73,23 @@ fn run(algo: &str) -> History {
     };
     let mut bayesian_filter: Box<dyn BayesianFilter<f64, Const<4>, Const<2>, Const<2>>> = match algo
     {
-        "Extended Kalman Filter (EKF)" => Box::new(ExtendedKalmanFilter::new(
-            q,
-            r,
-            SimpleProblemMeasurementModel::new(),
-            SimpleProblemMotionModel::new(),
-            initial_state,
-        )),
-        "Unscented Kalman Filter (UKF)" => Box::new(UnscentedKalmanFilter::new(
-            q,
-            r,
-            SimpleProblemMeasurementModel::new(),
-            SimpleProblemMotionModel::new(),
-            0.1,
-            2.0,
-            0.0,
-            initial_state,
-        )),
+//        "Extended Kalman Filter (EKF)" => Box::new(ExtendedKalmanFilter::new(
+//            q,
+//            r,
+//            SimpleProblemMeasurementModel::new(),
+//            SimpleProblemMotionModel::new(),
+//            initial_state,
+//        )),
+//        "Unscented Kalman Filter (UKF)" => Box::new(UnscentedKalmanFilter::new(
+//             q,
+//             r,
+//             SimpleProblemMeasurementModel::new(),
+//             SimpleProblemMotionModel::new(),
+//             0.1,
+//             2.0,
+//             0.0,
+//             initial_state,
+//         )),
         "Particle Filter (PF)" => Box::new(ParticleFilter::new(
             q,
             r,
@@ -119,7 +120,7 @@ fn run(algo: &str) -> History {
     while time < sim_time {
         time += dt;
         (x_true, z, x_dr, ud) = simple_problem.observation(&x_true, &x_dr, &u, dt);
-        bayesian_filter.update_estimate(&ud, &z, dt);
+        bayesian_filter.update_estimate(Some(ud), Some(vec![z]), dt);
         let gaussian_state = bayesian_filter.gaussian_estimate();
 
         // record step

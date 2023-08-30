@@ -108,24 +108,30 @@ where
     fn update_estimate(
         &mut self,
         // state: &GaussianState<T, S>,
-        u: &OVector<T, U>,
-        z: &OVector<T, Z>,
+        u: Option<OVector<T, U>>,
+        z: Option<Vec<OVector<T, Z>>>,
         dt: T,
     ) {
+        if u.is_none() {
+            return
+        }
+
+        let control = u.unwrap();
+
         let dim_s = self.q.shape_generic().0;
         let dim_z = self.r.shape_generic().0;
         // predict
         let sigma_points = self.generate_sigma_points(&self.state);
         let sp_xpred: Vec<OVector<T, S>> = sigma_points
             .iter()
-            .map(|x| self.motion_model.prediction(x, u, dt))
+            .map(|x| self.motion_model.prediction(x, &control, dt))
             .collect();
 
         let mean_xpred: OVector<T, S> = sp_xpred
             .iter()
             .zip(self.mw.iter())
             .map(|(x, w)| x * *w)
-            .fold(OMatrix::zeros_generic(dim_s, U1), |a, b| a + b);
+            .fold(OMatrix::zeros_generic(dim_s, U1), |a, b|& a + b);
 
         let cov_xpred = sp_xpred
             .iter()

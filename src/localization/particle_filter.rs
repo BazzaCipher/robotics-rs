@@ -82,34 +82,54 @@ where
     Standard: Distribution<T>,
     StandardNormal: Distribution<T>,
 {
-    fn update_estimate(&mut self, u: &OVector<T, U>, z: &OVector<T, Z>, dt: T) {
+    fn update_estimate(
+        &mut self,
+        u: Option<OVector<T, U>>,
+        z: Option<Vec<OVector<T, Z>>>,
+        dt: T
+    ) {
+        // Add positional noise to model
         let shape = self.particules[0].shape_generic();
         let mvn =
-            MultiVariateNormal::new(&OMatrix::zeros_generic(shape.0, shape.1), &self.r).unwrap();
+            MultiVariateNormal::new(
+                &OMatrix::zeros_generic(shape.0, shape.1),
+                &self.r
+            ).unwrap();
 
-        self.particules = self
-            .particules
-            .iter()
-            .map(|p| self.motion_model.prediction(p, u, dt) + mvn.sample())
-            .collect();
-
-        let mut weights = vec![T::one(); self.particules.len()];
-        let shape = z.shape_generic();
-        let mvn =
-            MultiVariateNormal::new(&OMatrix::zeros_generic(shape.0, shape.1), &self.q).unwrap();
-
-        for (i, particule) in self.particules.iter().enumerate() {
-            let z_pred = self.measurement_model.prediction(particule, None);
-            let error = z - z_pred;
-            let pdf = mvn.pdf(&error);
-            weights[i] *= pdf;
+        // With the motion model, predict the particles next position assuming
+        // there is little to no noise
+        if let Some(control) = u {
+            self.particules = self
+                .particules
+                .iter()
+                .map(|p| self.motion_model.prediction(p, &control, dt) + mvn.sample())
+                .collect();
         }
 
-        self.particules = match self.resampling_scheme {
-            ResamplingScheme::IID => resampling_sort(&self.particules, &weights),
-            ResamplingScheme::Stratified => resampling_stratified(&self.particules, &weights),
-            ResamplingScheme::Systematic => resampling_systematic(&self.particules, &weights),
-        };
+        // Predicts the location of the particles based on the landmarks
+        if let Some(measurements) = z {
+            let mut weights = vec![T::one(); self.particules.len()];
+
+            for measurement in measurements {
+                let shape = measurement.shape_generic();
+                let mvn =
+                    MultiVariateNormal::new(&OMatrix::zeros_generic(shape.0, shape.1), &self.q).unwrap();
+
+                for (i, particule) in self.particules.iter().enumerate() {
+                    let z_pred = self.measurement_model.prediction(particule, None);
+                    let error = &measurement - &z_pred;
+                    let pdf = mvn.pdf(&error);
+                    weights[i] *= pdf;
+                }
+            }
+
+            self.particules = match self.resampling_scheme {
+                ResamplingScheme::IID => resampling_sort(&self.particules, &weights),
+                ResamplingScheme::Stratified => resampling_stratified(&self.particules, &weights),
+                ResamplingScheme::Systematic => resampling_systematic(&self.particules, &weights),
+            };
+        }
+
     }
 
     fn gaussian_estimate(&self) -> GaussianState<T, S> {
@@ -183,6 +203,7 @@ where
         measurements: Option<Vec<(u32, OVector<T, Z>)>>,
         dt: T,
     ) {
+        // Predicts new belief state from the past beliefs with the motion model
         if let Some(u) = control {
             self.particules = self
                 .particules
@@ -191,21 +212,25 @@ where
                 .collect();
         }
 
+        // Samples the particles by predicting with the measurement model
         if let Some(measurements) = measurements {
             let mut weights = vec![T::one(); self.particules.len()];
             let shape = measurements[0].1.shape_generic();
             let mvn = MultiVariateNormal::new(&OMatrix::zeros_generic(shape.0, shape.1), &self.q)
                 .unwrap();
 
+            // Taking each landmark, approximate posterior with marginals
             for (id, z) in measurements
                 .iter()
                 .filter(|(id, _)| self.landmarks.contains_key(id))
             {
                 let landmark = self.landmarks.get(id);
                 for (i, particule) in self.particules.iter().enumerate() {
+                    // Prediction of the landmark position at particle position
                     let z_pred = self.measurement_model.prediction(particule, landmark);
                     let error = z - z_pred;
                     let pdf = mvn.pdf(&error);
+                    // Multiplying weights by each marginal
                     weights[i] *= pdf;
                 }
             }
