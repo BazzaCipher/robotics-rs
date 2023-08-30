@@ -329,6 +329,35 @@ dependencies = [
 
 [[package]]
 name = "criterion"
+<<<<<<< HEAD
+=======
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b01d6de93b2b6c65e17c634a26653a29d107b3c98c607c765bf38d041531cd8f"
+dependencies = [
+ "atty",
+ "cast",
+ "clap 2.34.0",
+ "criterion-plot 0.4.5",
+ "csv",
+ "itertools",
+ "lazy_static",
+ "num-traits",
+ "oorandom",
+ "plotters 0.3.4",
+ "rayon",
+ "regex",
+ "serde",
+ "serde_cbor",
+ "serde_derive",
+ "serde_json",
+ "tinytemplate",
+ "walkdir",
+]
+
+[[package]]
+name = "criterion"
+>>>>>>> 0faa6b0 (Fix examples issue with direct plotters-rs repo)
 version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e7c76e09c1aae2bc52b3d2f29e13c6572553b30c4aa1b8a49fd70de6412654cb"
@@ -343,7 +372,7 @@ dependencies = [
  "lazy_static",
  "num-traits",
  "oorandom",
- "plotters",
+ "plotters 0.3.4",
  "rayon",
  "regex",
  "serde",
@@ -1008,15 +1037,27 @@ version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d2c224ba00d7cadd4d5c660deaf2098e5e80e07846537c51f9cfa4be50c1fd45"
 dependencies = [
+ "num-traits",
+ "plotters-backend 0.3.4",
+ "plotters-svg 0.3.3",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
+name = "plotters"
+version = "0.3.5"
+source = "git+https://github.com/plotters-rs/plotters.git#50e462bba20d0d205e21215be3f5d3cf567015f3"
+dependencies = [
  "chrono",
  "font-kit",
  "image",
  "lazy_static",
  "num-traits",
  "pathfinder_geometry",
- "plotters-backend",
+ "plotters-backend 0.3.5",
  "plotters-bitmap",
- "plotters-svg",
+ "plotters-svg 0.3.5",
  "ttf-parser",
  "wasm-bindgen",
  "web-sys",
@@ -1029,14 +1070,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9e76628b4d3a7581389a35d5b6e2139607ad7c75b17aed325f210aa91f4a9609"
 
 [[package]]
+name = "plotters-backend"
+version = "0.3.5"
+source = "git+https://github.com/plotters-rs/plotters.git#50e462bba20d0d205e21215be3f5d3cf567015f3"
+
+[[package]]
 name = "plotters-bitmap"
 version = "0.3.3"
+<<<<<<< HEAD
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0cebbe1f70205299abc69e8b295035bb52a6a70ee35474ad10011f0a4efb8543"
+=======
+source = "git+https://github.com/plotters-rs/plotters.git#50e462bba20d0d205e21215be3f5d3cf567015f3"
+>>>>>>> 0faa6b0 (Fix examples issue with direct plotters-rs repo)
 dependencies = [
  "gif",
  "image",
- "plotters-backend",
+ "plotters-backend 0.3.5",
 ]
 
 [[package]]
@@ -1045,7 +1095,15 @@ version = "0.3.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "38f6d39893cca0701371e3c27294f09797214b86f1fb951b89ade8ec04e2abab"
 dependencies = [
- "plotters-backend",
+ "plotters-backend 0.3.4",
+]
+
+[[package]]
+name = "plotters-svg"
+version = "0.3.5"
+source = "git+https://github.com/plotters-rs/plotters.git#50e462bba20d0d205e21215be3f5d3cf567015f3"
+dependencies = [
+ "plotters-backend 0.3.5",
 ]
 
 [[package]]
@@ -1245,7 +1303,7 @@ dependencies = [
  "dialoguer",
  "nalgebra",
  "plotpy",
- "plotters",
+ "plotters 0.3.5",
  "rand",
  "rand_distr",
  "rayon",
