@@ -8,7 +8,9 @@ extern crate robotics;
 // use robotics::localization::{
 //    BayesianFilter, ExtendedKalmanFilter, ParticleFilter, ResamplingScheme, UnscentedKalmanFilter,
 //};
-use robotics::localization::{BayesianFilter, ParticleFilter, ResamplingScheme};
+use robotics::localization::{
+    BayesianFilter, GeneralParticleFilter, ParticleFilter, ResamplingScheme,
+};
 use robotics::models::measurement::{MeasurementModel, SimpleProblemMeasurementModel};
 use robotics::models::motion::{MotionModel, SimpleProblemMotionModel};
 use robotics::utils::deg2rad;
@@ -73,24 +75,24 @@ fn run(algo: &str) -> History {
     };
     let mut bayesian_filter: Box<dyn BayesianFilter<f64, Const<4>, Const<2>, Const<2>>> = match algo
     {
-//        "Extended Kalman Filter (EKF)" => Box::new(ExtendedKalmanFilter::new(
-//            q,
-//            r,
-//            SimpleProblemMeasurementModel::new(),
-//            SimpleProblemMotionModel::new(),
-//            initial_state,
-//        )),
-//        "Unscented Kalman Filter (UKF)" => Box::new(UnscentedKalmanFilter::new(
-//             q,
-//             r,
-//             SimpleProblemMeasurementModel::new(),
-//             SimpleProblemMotionModel::new(),
-//             0.1,
-//             2.0,
-//             0.0,
-//             initial_state,
-//         )),
-        "Particle Filter (PF)" => Box::new(ParticleFilter::new(
+        //        "Extended Kalman Filter (EKF)" => Box::new(ExtendedKalmanFilter::new(
+        //            q,
+        //            r,
+        //            SimpleProblemMeasurementModel::new(),
+        //            SimpleProblemMotionModel::new(),
+        //            initial_state,
+        //        )),
+        //        "Unscented Kalman Filter (UKF)" => Box::new(UnscentedKalmanFilter::new(
+        //             q,
+        //             r,
+        //             SimpleProblemMeasurementModel::new(),
+        //             SimpleProblemMotionModel::new(),
+        //             0.1,
+        //             2.0,
+        //             0.0,
+        //             initial_state,
+        //         )),
+        "Particle Filter (PF)" => Box::new(GeneralParticleFilter::new(
             q,
             r,
             SimpleProblemMeasurementModel::new(),

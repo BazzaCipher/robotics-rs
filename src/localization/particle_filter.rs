@@ -17,8 +17,38 @@ pub enum ResamplingScheme {
     Systematic,
 }
 
+/// Trait that generalises the particle filter to respond with the particles
+/// Useful for when using multiple different particle-based filters (MCL)
+pub trait ParticleFilter<T: RealField + Copy, S: Dim, Z: Dim, U: Dim>:
+    BayesianFilter<T, S, Z, U>
+where
+    DefaultAllocator: Allocator<T, S>
+        + Allocator<T, S, S>
+        + Allocator<T, Z, Z>
+        + Allocator<T, U>
+        + Allocator<T, Z>,
+{
+    fn particles(&self) -> &Vec<OVector<T, S>>;
+    fn particles_mut(&mut self) -> &mut Vec<OVector<T, S>>;
+}
+
+/// Trait that generalises the particle filter to respond with the particles
+/// Useful for when using multiple different particle-based filters (MCL)
+pub trait ParticleFilterKnownCorrespondences<T: RealField + Copy, S: Dim, Z: Dim, U: Dim>:
+    BayesianFilterKnownCorrespondences<T, S, Z, U>
+where
+    DefaultAllocator: Allocator<T, S>
+        + Allocator<T, S, S>
+        + Allocator<T, Z, Z>
+        + Allocator<T, U>
+        + Allocator<T, Z>,
+{
+    fn particles(&self) -> &Vec<OVector<T, S>>;
+    fn particles_mut(&mut self) -> &mut Vec<OVector<T, S>>;
+}
+
 /// S : State Size, Z: Observation Size, U: Input Size
-pub struct ParticleFilter<T: RealField, S: Dim, Z: Dim, U: Dim>
+pub struct GeneralParticleFilter<T: RealField, S: Dim, Z: Dim, U: Dim>
 where
     DefaultAllocator: Allocator<T, S> + Allocator<T, S, S> + Allocator<T, Z, Z>,
 {
@@ -30,7 +60,7 @@ where
     resampling_scheme: ResamplingScheme,
 }
 
-impl<T: RealField + Copy, S: Dim, Z: Dim, U: Dim> ParticleFilter<T, S, Z, U>
+impl<T: RealField + Copy, S: Dim, Z: Dim, U: Dim> GeneralParticleFilter<T, S, Z, U>
 where
     StandardNormal: Distribution<T>,
     Standard: Distribution<T>,
@@ -48,14 +78,14 @@ where
         initial_state: GaussianState<T, S>,
         num_particules: usize,
         resampling_scheme: ResamplingScheme,
-    ) -> ParticleFilter<T, S, Z, U> {
+    ) -> GeneralParticleFilter<T, S, Z, U> {
         let mvn = MultiVariateNormal::new(&initial_state.x, &r).unwrap();
         let mut particules = Vec::with_capacity(num_particules);
         for _ in 0..num_particules {
             particules.push(mvn.sample());
         }
 
-        ParticleFilter {
+        GeneralParticleFilter {
             r,
             q,
             measurement_model,
@@ -67,7 +97,7 @@ where
 }
 
 impl<T: RealField + Copy, S: Dim, Z: Dim, U: Dim> BayesianFilter<T, S, Z, U>
-    for ParticleFilter<T, S, Z, U>
+    for GeneralParticleFilter<T, S, Z, U>
 where
     DefaultAllocator: Allocator<T, S>
         + Allocator<T, U>
@@ -82,19 +112,11 @@ where
     Standard: Distribution<T>,
     StandardNormal: Distribution<T>,
 {
-    fn update_estimate(
-        &mut self,
-        u: Option<OVector<T, U>>,
-        z: Option<Vec<OVector<T, Z>>>,
-        dt: T
-    ) {
+    fn update_estimate(&mut self, u: Option<OVector<T, U>>, z: Option<Vec<OVector<T, Z>>>, dt: T) {
         // Add positional noise to model
         let shape = self.particules[0].shape_generic();
         let mvn =
-            MultiVariateNormal::new(
-                &OMatrix::zeros_generic(shape.0, shape.1),
-                &self.r
-            ).unwrap();
+            MultiVariateNormal::new(&OMatrix::zeros_generic(shape.0, shape.1), &self.r).unwrap();
 
         // With the motion model, predict the particles next position assuming
         // there is little to no noise
@@ -113,7 +135,8 @@ where
             for measurement in measurements {
                 let shape = measurement.shape_generic();
                 let mvn =
-                    MultiVariateNormal::new(&OMatrix::zeros_generic(shape.0, shape.1), &self.q).unwrap();
+                    MultiVariateNormal::new(&OMatrix::zeros_generic(shape.0, shape.1), &self.q)
+                        .unwrap();
 
                 for (i, particule) in self.particules.iter().enumerate() {
                     let z_pred = self.measurement_model.prediction(particule, None);
@@ -129,7 +152,6 @@ where
                 ResamplingScheme::Systematic => resampling_systematic(&self.particules, &weights),
             };
         }
-
     }
 
     fn gaussian_estimate(&self) -> GaussianState<T, S> {
@@ -137,8 +159,32 @@ where
     }
 }
 
+impl<T: RealField + Copy, S: Dim, Z: Dim, U: Dim> ParticleFilter<T, S, Z, U>
+    for GeneralParticleFilter<T, S, Z, U>
+where
+    DefaultAllocator: Allocator<T, S>
+        + Allocator<T, Z>
+        + Allocator<T, U>
+        + Allocator<T, S, S>
+        + Allocator<T, Z, Z>
+        + Allocator<T, Z, S>
+        + Allocator<T, S, U>
+        + Allocator<T, U, U>
+        + Allocator<T, Const<1>, S>
+        + Allocator<T, Const<1>, Z>,
+    Standard: Distribution<T>,
+    StandardNormal: Distribution<T>,
+{
+    fn particles(&self) -> &Vec<OVector<T, S>> {
+        &self.particules
+    }
+    fn particles_mut(&mut self) -> &mut Vec<OVector<T, S>> {
+        &mut self.particules
+    }
+}
+
 /// S : State Size, Z: Observation Size, U: Input Size
-pub struct ParticleFilterKnownCorrespondences<T: RealField, S: Dim, Z: Dim, U: Dim>
+pub struct GeneralParticleFilterKnownCorrespondences<T: RealField, S: Dim, Z: Dim, U: Dim>
 where
     DefaultAllocator: Allocator<T, S> + Allocator<T, S, S> + Allocator<T, Z, Z>,
 {
@@ -149,7 +195,8 @@ where
     pub particules: Vec<OVector<T, S>>,
 }
 
-impl<T: RealField + Copy, S: Dim, Z: Dim, U: Dim> ParticleFilterKnownCorrespondences<T, S, Z, U>
+impl<T: RealField + Copy, S: Dim, Z: Dim, U: Dim>
+    GeneralParticleFilterKnownCorrespondences<T, S, Z, U>
 where
     StandardNormal: Distribution<T>,
     Standard: Distribution<T>,
@@ -164,14 +211,14 @@ where
         motion_model: Box<dyn MotionModel<T, S, Z, U> + Send>,
         initial_state: GaussianState<T, S>,
         num_particules: usize,
-    ) -> ParticleFilterKnownCorrespondences<T, S, Z, U> {
+    ) -> GeneralParticleFilterKnownCorrespondences<T, S, Z, U> {
         let mvn = MultiVariateNormal::new(&initial_state.x, &initial_noise).unwrap();
         let mut particules = Vec::with_capacity(num_particules);
         for _ in 0..num_particules {
             particules.push(mvn.sample());
         }
 
-        ParticleFilterKnownCorrespondences {
+        GeneralParticleFilterKnownCorrespondences {
             q,
             landmarks,
             measurement_model,
@@ -182,7 +229,7 @@ where
 }
 
 impl<T: RealField + Copy, S: Dim, Z: Dim, U: Dim> BayesianFilterKnownCorrespondences<T, S, Z, U>
-    for ParticleFilterKnownCorrespondences<T, S, Z, U>
+    for GeneralParticleFilterKnownCorrespondences<T, S, Z, U>
 where
     StandardNormal: Distribution<T>,
     Standard: Distribution<T>,
@@ -241,6 +288,30 @@ where
 
     fn gaussian_estimate(&self) -> GaussianState<T, S> {
         gaussian_estimate(&self.particules)
+    }
+}
+
+impl<T: RealField + Copy, S: Dim, Z: Dim, U: Dim> ParticleFilterKnownCorrespondences<T, S, Z, U>
+    for GeneralParticleFilterKnownCorrespondences<T, S, Z, U>
+where
+    DefaultAllocator: Allocator<T, S>
+        + Allocator<T, Z>
+        + Allocator<T, U>
+        + Allocator<T, S, S>
+        + Allocator<T, Z, Z>
+        + Allocator<T, U, U>
+        + Allocator<T, S, U>
+        + Allocator<T, Z, S>
+        + Allocator<T, Const<1>, S>
+        + Allocator<T, Const<1>, Z>,
+    Standard: Distribution<T>,
+    StandardNormal: Distribution<T>,
+{
+    fn particles(&self) -> &Vec<OVector<T, S>> {
+        &self.particules
+    }
+    fn particles_mut(&mut self) -> &mut Vec<OVector<T, S>> {
+        &mut self.particules
     }
 }
 

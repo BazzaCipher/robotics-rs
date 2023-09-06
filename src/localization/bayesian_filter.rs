@@ -21,9 +21,9 @@ where
     /// p(x_t|x_{t-1},u) and measurement distribution p(z_t|x_t, etc.)
     fn update_estimate(
         &mut self,
-        u: Option<OVector<T, U>>,
-        z: Option<Vec<OVector<T, Z>>>,
-        dt: T
+        control: Option<OVector<T, U>>,
+        measurements: Option<Vec<OVector<T, Z>>>,
+        dt: T,
     );
 
     /// Generate the best guess according to the current state of the robot's

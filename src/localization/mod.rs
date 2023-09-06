@@ -5,5 +5,8 @@ mod particle_filter;
 
 pub use bayesian_filter::{BayesianFilter, BayesianFilterKnownCorrespondences};
 // pub use extended_kalman_filter::{ExtendedKalmanFilter, ExtendedKalmanFilterKnownCorrespondences};
-pub use particle_filter::{ParticleFilter, ParticleFilterKnownCorrespondences, ResamplingScheme};
+pub use particle_filter::{
+    GeneralParticleFilter, GeneralParticleFilterKnownCorrespondences, ParticleFilter,
+    ResamplingScheme,
+};
 // pub use unscented_kalman_filter::UnscentedKalmanFilter;
