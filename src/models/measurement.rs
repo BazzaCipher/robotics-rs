@@ -42,12 +42,14 @@ impl MeasurementModel<f64, Const<3>, Const<2>> for RangeBearingMeasurementModel 
         Vector2::new(range, bearing)
     }
 
+    /// This Jacobian represents the local derivative Ht
+    /// It is useful for linearizing h, the measurement prediction function
     fn jacobian(&self, x: &Vector3<f64>, landmark: Option<&Vector3<f64>>) -> Matrix2x3<f64> {
-        //state
-        let x_x = x[0];
-        let x_y = x[1];
+        // Pose (neglect theta)
+        let [x_x, x_y, _] = x;
+
         // landmark
-        let Some(lm) = landmark else{
+        let Some(lm) = landmark else {
             panic!("WRONG x2 !!!")
         };
         let l_x = lm[0];

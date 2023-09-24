@@ -1,4 +1,5 @@
-#![allow(dead_code)] // TODO: remove this
+#![allow(dead_code)] use criterion::measurement;
+// TODO: remove this
 use nalgebra::{allocator::Allocator, Const, DefaultAllocator, Dim, OMatrix, OVector, RealField};
 use rand::distributions::Distribution;
 use rand::Rng;
@@ -28,8 +29,10 @@ where
         + Allocator<T, U>
         + Allocator<T, Z>,
 {
-    fn particles(&self) -> &Vec<OVector<T, S>>;
-    fn particles_mut(&mut self) -> &mut Vec<OVector<T, S>>;
+    type Particle;
+
+    fn particles(&self) -> &Vec<Self::Particle>;
+    fn particles_mut(&mut self) -> &mut Vec<Self::Particle>;
 }
 
 /// Trait that generalises the particle filter to respond with the particles
@@ -175,6 +178,8 @@ where
     Standard: Distribution<T>,
     StandardNormal: Distribution<T>,
 {
+    type Particle = OVector<T, S>;
+
     fn particles(&self) -> &Vec<OVector<T, S>> {
         &self.particules
     }
@@ -313,6 +318,140 @@ where
     fn particles_mut(&mut self) -> &mut Vec<OVector<T, S>> {
         &mut self.particules
     }
+}
+
+/// Struct that contains the determinants of a given particle
+#[derive(Debug, Clone)]
+pub struct FastParticle<T, S>
+where
+    T: RealField + Copy,
+    S: Dim,
+    DefaultAllocator: Allocator<T, S>,
+{
+    pose: OVector<T, S>,
+    // Features are mean, covariance, and probabilistic estimate (logarithmic)
+    features: Vec<OVector<OVector<T, Const<2>>, Const<3>>>,
+}
+
+/// Simple implementation of FastSLAM v1 with EKF landmark estimation
+/// TODO: Optimise data structure and implementation details
+pub struct FastSlam1<T: RealField + Copy, S: Dim, Z: Dim, U: Dim>
+where
+    DefaultAllocator: Allocator<T, S> + Allocator<T, S, S> + Allocator<T, Z, Z>,
+{
+    state_noise: OMatrix<T, S, S>,
+    control_noise: OMatrix<T, Z, Z>,
+    measurement_model: Box<dyn MeasurementModel<T, S, Z> + Send>,
+    motion_model: Box<dyn MotionModel<T, S, Z, U> + Send>,
+    pub particules: Vec<FastParticle<T, S>>,
+    resampling_scheme: ResamplingScheme,
+}
+
+impl<T: RealField + Copy, S: Dim, Z: Dim, U: Dim> FastSlam1<T, S, Z, U>
+where
+    DefaultAllocator: Allocator<T, S>
+        + Allocator<T, Z>
+        + Allocator<T, U>
+        + Allocator<T, S, S>
+        + Allocator<T, Z, Z>
+        + Allocator<T, Const<1>, S>,
+    StandardNormal: Distribution<T>,
+{
+    pub fn new(
+        state_noise: OMatrix<T, S, S>,
+        control_noise: OMatrix<T, Z, Z>,
+        measurement_model: Box<dyn MeasurementModel<T, S, Z> + Send>,
+        motion_model: Box<dyn MotionModel<T, S, Z, U> + Send>,
+        initial_state: GaussianState<T, S>,
+        num_particules: usize,
+        resampling_scheme: ResamplingScheme,
+    ) -> FastSlam1<T, S, Z, U> {
+        let mvn = MultiVariateNormal::new(&initial_state.x, &state_noise).unwrap();
+        let mut particules = Vec::with_capacity(num_particules);
+        for _ in 0..num_particules {
+            particules.push(FastParticle {
+                pose: mvn.sample(),
+                features: Vec::with_capacity(50),
+            });
+        }
+
+        FastSlam1 {
+            state_noise,
+            control_noise,
+            measurement_model,
+            motion_model,
+            particules,
+            resampling_scheme,
+        }
+    }
+}
+
+impl<T: RealField + Copy, S: Dim, Z: Dim, U: Dim> BayesianFilter<T, S, Z, U>
+    for FastSlam1<T, S, Z, U>
+where
+    DefaultAllocator: Allocator<T, S>
+        + Allocator<T, Z>
+        + Allocator<T, U>
+        + Allocator<T, S, S>
+        + Allocator<T, Z, Z>
+        + Allocator<T, Const<1>, S>,
+{
+    fn update_estimate(
+        &mut self,
+        u: Option<OVector<T, U>>,
+        z: Option<Vec<OVector<T, Z>>>,
+        dt: T,
+    ) {
+        // Note that we do sequential updates for all z; TODO: Make efficient
+        //  Generate positional noise
+        let shape = self.particles()[0].pose.shape_generic();
+        let mvn =
+            MultiVariantNormal::new(&Omatrix::zeros_generic(shape.0, shape.1), &self.state_noise).unwrap();
+
+        // With the motion model, use the pose of the particle with the control
+        // to predict the next position
+        let Some(control) = u else {
+            return
+        }
+
+        self.particles_mut()
+            .iter_mut()
+            .map(|(pose, features)| {
+                // Sample new pose
+                let x_pred = self.motion_model.prediction(p.pose, &control, dt) + mvn.sample();
+                if z.is_none() { return };
+                let Some(measurements) = z;
+
+                for feature in measurements {
+                    // Calculates the probability of observing feature
+                    // p (z_t | etc)
+                    let [m, c, i] = feature;
+                    let G_theta = self.measurement_model.jacobian(x_pred, Some(m));
+                    let z = self.measurement_model.prediction(x_pred, Some(m)) + G_theta * ();
+                }
+            .collect()
+
+        ()
+    }
+    fn gaussian_estimate(&self) -> GaussianState<T, S> {
+        unimplemented!()
+    }
+}
+
+impl<T: RealField + Copy, S: Dim, Z: Dim, U: Dim> ParticleFilter<T, S, Z, U>
+    for FastSlam1<T, S, Z, U>
+    where
+    DefaultAllocator: Allocator<T, S>
+        + Allocator<T, Z>
+        + Allocator<T, U>
+        + Allocator<T, S, S>
+        + Allocator<T, Z, Z>
+        + Allocator<T, Const<1>, S>,
+{
+    type Particle = FastParticle<T, S>;
+
+    fn particles(&self) -> &Vec<Self::Particle> { &self.particules }
+    fn particles_mut(&mut self) -> &mut Vec<Self::Particle> { &mut self.particules }
 }
 
 fn gaussian_estimate<T: RealField + Copy, S: Dim>(
